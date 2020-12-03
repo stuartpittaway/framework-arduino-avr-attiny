@@ -25,9 +25,11 @@
 #define core_build_options_h
 
 #if defined(ARDUINO) && (defined( __AVR_ATtiny441__ ) || defined( __AVR_ATtiny841__ ))
-#if (ARDUINO < 10806)
-#error "This version of the Arduino IDE is not supported for this part, upgrade Arduino 1.8.6 or higher or downgrade ATTinyCore to 1.2.1"
-#endif
+  #if (ARDUINO < 10806 && ARDUINO != 10607)
+    #error "This version of the Arduino IDE is not supported for this part, upgrade Arduino 1.8.6 or higher or downgrade ATTinyCore to 1.2.1"
+  #elif (ARDUINO == 10607)
+    #warning "Arduino 1.6.7 or arduino-cli detected - Arduino 1.6.7 is not compatible with the tiny841/441 in ATTinyCore 1.2.2 and later - Arduino 1.8.6 or later is required. Versions of arduino-cli not based on Arduino 1.8.6 and later may also have same issue, but arduino-cli version cannot be detected due to a bug in arduino-cli."
+  #endif
 #endif
 /*=============================================================================
   Low power / smaller code options
@@ -52,7 +54,7 @@
 #define TIMER_TO_USE_FOR_MILLIS                   0
 
 /*
-  Tone goes on timer2 for maximum compatibility
+  Tone goes on Timer2 for maximum compatibility
 */
 #define TIMER_TO_USE_FOR_TONE                     2
 
@@ -119,7 +121,11 @@
   left them in a bad way.
 =============================================================================*/
 
-#define HAVE_BOOTLOADER                           0
+// This is commented out. The only place where HAVE_BOOTLOADER is checked is in wiring.c, where it wastes precious bytes of flash resetting timer-related registers out of fear that the bootloader has scribbled on them.
+// However, Optiboot does a WDR before jumping straight to app to start after running.
+// This means that optiboot leaves all the registers clean. Meanwhile, Micronucleus doesn't even USE any of the timers, and that's all the wiring.c code checks on (to make sure millis will work)
+// commenting out instead of setting to 0, as that would allow a hypothetical badly behaved bootloader to be supported in the future by having it add -DHAVE_BOOTLOADER from boards.txt
+// #define HAVE_BOOTLOADER                           0
 
 
 /*=============================================================================

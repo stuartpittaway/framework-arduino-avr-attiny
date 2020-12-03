@@ -17,6 +17,9 @@ extern "C"{
 #endif
 
 #define ATTINY_CORE 1
+#ifndef _NOPNOP
+  #define _NOPNOP() do { __asm__ volatile ("rjmp .+0"); } while (0)
+#endif
 
 void yield(void);
 
@@ -65,7 +68,7 @@ void yield(void);
 
 #if F_CPU < 1000000L
 //Prevent a divide by 0 is
-#warning Clocks per microsecond < 1. To prevent divide by 0, it is rounded up to 1.
+#warning "Clocks per microsecond < 1. To prevent divide by 0, it is rounded up to 1."
 //static inline unsigned long clockCyclesPerMicrosecond() __attribute__ ((always_inline));
 //static inline unsigned long clockCyclesPerMicrosecond()
 //{//
@@ -73,13 +76,16 @@ void yield(void);
 //  return 1;
 //}
   //WTF were they thinking?!
-#define clockCyclesPerMicrosecond() 1L
+#define clockCyclesPerMicrosecond() 1UL
 #else
-#define clockCyclesPerMicrosecond() ( F_CPU / 1000000L )
+#define clockCyclesPerMicrosecond() ( F_CPU / 1000000UL )
 #endif
 
-#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
-#define microsecondsToClockCycles(a) ( ((a) * (F_CPU / 1000L)) / 1000L )
+//#define clockCyclesToMicroseconds(a) ( ((a) * 1000L) / (F_CPU / 1000L) )
+//#define microsecondsToClockCycles(a) ( ((a) * (F_CPU / 1000L)) / 1000L )
+
+#define clockCyclesToMicroseconds(a) ( (a) / clockCyclesPerMicrosecond() )
+#define microsecondsToClockCycles(a) ( (a) * clockCyclesPerMicrosecond() )
 
 #define lowByte(w) ((uint8_t) ((w) & 0xff))
 #define highByte(w) ((uint8_t) ((w) >> 8))
@@ -114,6 +120,9 @@ unsigned long micros(void);
 void delay(unsigned long);
 void delayMicroseconds(unsigned int us);
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout);
+#ifndef DISABLEMILLIS
+unsigned long pulseInLong(uint8_t pin, uint8_t state, unsigned long timeout);
+#endif
 
 void shiftOut(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder, uint8_t val);
 uint8_t shiftIn(uint8_t dataPin, uint8_t clockPin, uint8_t bitOrder);
@@ -164,12 +173,21 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 #define TIMER1A 3
 #define TIMER1B 4
 #define TIMER1D 5
+#define TIM1AU (0x10)
+#define TIM1AV (0x11)
+#define TIM1AW (0x12)
+#define TIM1AX (0x13)
+#define TIM1BU (0x14)
+#define TIM1BV (0x15)
+#define TIM1BW (0x16)
+#define TIM1BX (0x17)
+
 
 #include "pins_arduino.h"
 
 #ifndef USE_SOFTWARE_SERIAL
-//Default to hardware serial.
-#define USE_SOFTWARE_SERIAL 0
+  //Default to hardware serial.
+  #define USE_SOFTWARE_SERIAL 0
 #endif
 
 /*=============================================================================
@@ -177,15 +195,15 @@ extern const uint8_t PROGMEM digital_pin_to_timer_PGM[];
 =============================================================================*/
 
 #ifndef TIMER_TO_USE_FOR_MILLIS
-#define TIMER_TO_USE_FOR_MILLIS                     0
+  #define TIMER_TO_USE_FOR_MILLIS                     0
 #endif
 /*
   Tone goes on whichever timer was not used for millis.
 */
 #if TIMER_TO_USE_FOR_MILLIS == 1
-#define TIMER_TO_USE_FOR_TONE                     0
+  #define TIMER_TO_USE_FOR_TONE                     0
 #else
-#define TIMER_TO_USE_FOR_TONE                     1
+  #define TIMER_TO_USE_FOR_TONE                     1
 #endif
 
 #if NUM_ANALOG_INPUTS > 0
@@ -235,6 +253,9 @@ uint16_t makeWord(byte h, byte l);
 #define word(...) makeWord(__VA_ARGS__)
 
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout = 1000000L);
+#ifndef DISABLEMILLIS
+unsigned long pulseInLong(uint8_t pin, uint8_t state, unsigned long timeout = 1000000L);
+#endif
 
 void tone(uint8_t _pin, unsigned long frequency, unsigned long duration = 0);
 void noTone(uint8_t _pin = 255);
@@ -252,6 +273,15 @@ long map(long, long, long, long, long);
   doesn't have to be riddled with #ifdefs.
 =============================================================================*/
 
+#ifndef SIGRD
+#define SIGRD 5
+#endif
+
+
+#if defined( TIM0_CAPT_vect ) && ! defined( TIMER0_CAPT_vect )
+#define TIMER0_CAPT_vect TIM0_CAPT_vect
+#endif
+
 #if defined( TIM0_COMPA_vect ) && ! defined( TIMER0_COMPA_vect )
 #define TIMER0_COMPA_vect TIM0_COMPA_vect
 #endif
@@ -262,6 +292,10 @@ long map(long, long, long, long, long);
 
 #if defined( TIM0_OVF_vect ) && ! defined( TIMER0_OVF_vect )
 #define TIMER0_OVF_vect TIM0_OVF_vect
+#endif
+
+#if defined( TIM1_CAPT_vect ) && ! defined( TIMER1_CAPT_vect )
+#define TIMER1_CAPT_vect TIM1_CAPT_vect
 #endif
 
 #if defined( TIM1_COMPA_vect ) && ! defined( TIMER1_COMPA_vect )
@@ -275,5 +309,22 @@ long map(long, long, long, long, long);
 #if defined( TIM1_OVF_vect ) && ! defined( TIMER1_OVF_vect )
 #define TIMER1_OVF_vect TIM1_OVF_vect
 #endif
+
+#if defined( TIM2_CAPT_vect ) && ! defined( TIMER2_CAPT_vect )
+#define TIMER2_CAPT_vect TIM2_CAPT_vect
+#endif
+
+#if defined( TIM2_COMPA_vect ) && ! defined( TIMER2_COMPA_vect )
+#define TIMER2_COMPA_vect TIM2_COMPA_vect
+#endif
+
+#if defined( TIM2_COMPB_vect ) && ! defined( TIMER2_COMPB_vect )
+#define TIMER2_COMPB_vect TIM2_COMPB_vect
+#endif
+
+#if defined( TIM2_OVF_vect ) && ! defined( TIMER2_OVF_vect )
+#define TIMER2_OVF_vect TIM2_OVF_vect
+#endif
+
 
 #endif
