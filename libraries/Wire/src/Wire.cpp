@@ -330,7 +330,7 @@ void TwoWire::onRequest( void (*function)(void) )
 TwoWire Wire = TwoWire();
 
 #else
-#ifdef USIDR
+#ifdef USIDR //BEGIN USI TWI IMPLEMENTATION
 extern "C" {
 #include <stdlib.h>
 #include <string.h>
@@ -368,6 +368,9 @@ void TwoWire::begin(void) {
 }
 
 void TwoWire::begin(uint8_t address) {
+  BufferIndex = 0;
+  BufferLength = 0;
+
   USI_TWI_Slave_Initialise(address);
 }
 
@@ -909,8 +912,19 @@ void TwoWire::flush(void) {
 }
 #ifndef WIRE_MASTER_ONLY
 // sets function called on slave write
-void TwoWire::onReceive(void(*function)(int)) {
+//void TwoWire::onReceive(void(*function)(int)) {
+//  TinyWireS.onReceive(function);
+//}
+void TwoWire::onReceive( void (*function)(size_t) ) {
   TinyWireS.onReceive(function);
+}
+
+
+void TwoWire::onReceive( void (*function)(int) ) {
+  // arduino api compatibility fixer:
+  // really hope size parameter will not exceed 2^31 :)
+  static_assert(sizeof(int) == sizeof(size_t), "something is wrong in Arduino kingdom");
+  TinyWireS.onReceive(reinterpret_cast<void(*)(size_t)>(function));
 }
 
 // sets function called on slave read

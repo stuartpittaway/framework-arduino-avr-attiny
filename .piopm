@@ -1,1 +1,1 @@
-{"type": "tool", "name": "framework-arduino-avr-attiny", "version": "1.3.2", "spec": {"owner": "platformio", "id": 8040, "name": "framework-arduino-avr-attiny", "requirements": null, "url": null}}
+{"type": "tool", "name": "framework-arduino-avr-attiny", "version": "1.4.1", "spec": {"owner": "platformio", "id": 8040, "name": "framework-arduino-avr-attiny", "requirements": null, "url": null}}
