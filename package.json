@@ -1,0 +1,15 @@
+{
+  "name": "framework-arduino-avr-attiny",
+  "version": "1.3.2",
+  "description": "Arduino Wiring-based Framework for Microchip AVR microcontrollers (ATTiny Core)",
+  "keywords": [
+    "framework",
+    "arduino",
+    "microchip",
+    "avr"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SpenceKonde/ATTinyCore"
+  }
+}
